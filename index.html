@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroFleet | Modern UI</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script defer src="https://unpkg.com/feather-icons"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding-right: 20px;">
+                    <div class="logo" style="padding-right: 0;">
+                        <div class="logo-icon-bg"><i data-feather="navigation" class="logo-icon"></i></div>
+                        <h2>AeroFleet</h2>
+                    </div>
+                    <button id="pin-sidebar-btn" class="icon-btn small interactive-item" title="Toggle Fixed/Floating" style="background: rgba(255,255,255,0.05); color: #8f9bba;">
+                        <i data-feather="lock"></i>
+                    </button>
+                </div>
+                <nav class="nav-menu" id="sidebar-nav">
+                    <a href="#" class="nav-item active" data-target="view-overview"><i data-feather="grid"></i> OVERVIEW</a>
+                    <a href="#" class="nav-item" data-target="view-live-map"><i data-feather="map"></i> LIVE MAP</a>
+                    <a href="#" class="nav-item" data-target="view-alerts"><i data-feather="alert-triangle"></i> INCIDENT ALERTS</a>
+                    <a href="#" class="nav-item" data-target="view-analytics"><i data-feather="bar-chart-2"></i> ANALYTICS</a>
+                    <a href="#" class="nav-item" data-target="view-safety"><i data-feather="shield"></i> SAFETY CENTER</a>
+                    <a href="#" class="nav-item" data-target="view-settings"><i data-feather="settings"></i> SETTINGS</a>
+                </nav>
+            </div>
+            <div class="user-profile interactive-item" id="user-profile-btn">
+                <img src="https://ui-avatars.com/api/?name=Command+Center&background=0D8ABC&color=fff&rounded=true" alt="Avatar" class="avatar">
+                <div class="user-info">
+                    <p class="user-name">Command Center</p>
+                    <p class="user-role">Fleet Manager</p>
+                </div>
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown" id="profile-dropdown">
+                    <a href="#" class="dropdown-item" onclick="document.querySelector('[data-target=\'view-settings\']').click(); return false;"><i data-feather="user"></i> Account Profile</a>
+                    <a href="#" class="dropdown-item" onclick="showToast('Accessing Billing...'); return false;"><i data-feather="credit-card"></i> Subscriptions</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item text-red" onclick="handleLogout(); return false;"><i data-feather="log-out"></i> Log Out</a>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- MAIN LAYOUT AREA -->
+        <main class="main-content">
+            <!-- HEADER -->
+            <header class="top-header">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <button id="sidebar-toggle-btn" class="icon-btn interactive-item" title="Toggle Sidebar">
+                        <i data-feather="menu"></i>
+                    </button>
+                    <div class="search-bar hover-effect">
+                        <i data-feather="search" class="search-icon"></i>
+                        <input type="text" id="global-search" placeholder="Search fleet or driver...">
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="notification-wrapper" style="position:relative;">
+                        <button class="icon-btn interactive-item" id="notification-btn" title="Notifications">
+                            <i data-feather="bell"></i>
+                            <span class="badge"></span>
+                        </button>
+                        <!-- Notification Dropdown -->
+                        <div class="notification-dropdown" id="notification-dropdown">
+                            <div class="dropdown-header">
+                                <h3>Notifications</h3>
+                                <button class="text-link-btn" style="padding:0; background:transparent;" onclick="showToast('All notifications marked as read')">Mark all read</button>
+                            </div>
+                            <div class="notification-list">
+                                <div class="notification-item unread">
+                                    <div class="notify-icon red"><i data-feather="alert-triangle"></i></div>
+                                    <div class="notify-content">
+                                        <p><strong>Critical Collision</strong> detected by dashcam on I-90 Express Ln</p>
+                                        <span>2 mins ago</span>
+                                    </div>
+                                </div>
+                                <div class="notification-item unread">
+                                    <div class="notify-icon blue"><i data-feather="shield"></i></div>
+                                    <div class="notify-content">
+                                        <p><strong>Weekly Safety Report</strong> is ready to view and export.</p>
+                                        <span>1 hour ago</span>
+                                    </div>
+                                </div>
+                                <div class="notification-item">
+                                    <div class="notify-icon purple"><i data-feather="zap"></i></div>
+                                    <div class="notify-content">
+                                        <p><strong>Alex Chen</strong> exceeded the fleet speed limit buffer.</p>
+                                        <span>3 hours ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown-footer">
+                                <a href="#" onclick="document.querySelector('[data-target=\'view-alerts\']').click(); return false;">View All Alerts</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=1e293b&color=fff&rounded=true" alt="Admin" class="header-avatar interactive-item" onclick="document.querySelector('[data-target=\'view-settings\']').click();" title="Account Settings">
+                </div>
+            </header>
+            
+            <!-- VIEWS CONTAINER -->
+            <div id="views-container">
+                
+                <!-- 1. OVERVIEW VIEW -->
+                <div id="view-overview" class="view-section active-view fade-in-up">
+                    <div class="dashboard-grid">
+                        <div class="left-col">
+                            <div class="stats-row">
+                                <div class="stat-card hover-card interactive-item">
+                                    <div class="stat-header">
+                                        <h3>TOTAL INCIDENTS</h3>
+                                        <div class="icon-wrapper blue-bg"><i data-feather="truck" class="blue-text"></i></div>
+                                    </div>
+                                    <div class="stat-body">
+                                        <div class="stat-value text-red" id="total-incidents-val">5</div>
+                                        <div class="stat-alert pulse-animation"><i data-feather="alert-triangle" class="red-text"></i></div>
+                                    </div>
+                                    <div class="stat-footer">Last 24 hours</div>
+                                </div>
+                                <div class="stat-card hover-card interactive-item">
+                                    <div class="stat-header">
+                                        <h3>SAFETY SCORE</h3>
+                                        <div class="icon-wrapper green-bg"><i data-feather="shield" class="green-text"></i></div>
+                                    </div>
+                                    <div class="stat-body">
+                                        <div class="stat-value"><span>88</span><span class="small-val">/100</span></div>
+                                    </div>
+                                    <div class="stat-footer positive"><i data-feather="trending-up" style="width:14px; height:14px; margin-right:4px;"></i> +2.4% from avg</div>
+                                </div>
+                            </div>
+                            <div class="map-card card hover-card">
+                                <div class="card-header-inner">
+                                    <h3 class="card-title">Live Fleet Tracking</h3>
+                                    <button class="icon-btn small interactive-item" onclick="document.querySelector('[data-target=\'view-live-map\']').click()" title="Expand Map">
+                                        <i data-feather="maximize-2"></i>
+                                    </button>
+                                </div>
+                                <div id="fleet-map"></div>
+                            </div>
+                            <div class="chart-card card hover-card">
+                                <div class="card-header-inner">
+                                    <h3 class="card-title">Weekly AI Incidents</h3>
+                                    <button class="text-link-btn interactive-item" onclick="document.querySelector('[data-target=\'view-analytics\']').click()">FULL REPORT <i data-feather="arrow-right"></i></button>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="incidentChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="right-col">
+                            <div class="events-card card hover-card">
+                                <div class="events-header">
+                                    <h3>Recent Events</h3>
+                                    <button class="more-btn interactive-item" onclick="showToast('Filter options coming soon')"><i data-feather="more-vertical"></i></button>
+                                </div>
+                                <div class="events-list" id="events-list-container">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                                <button class="btn-primary view-all-btn" onclick="document.querySelector('[data-target=\'view-alerts\']').click()">View All Incidents</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 2. LIVE MAP VIEW -->
+                <div id="view-live-map" class="view-section flex-view fade-in-up" style="height: calc(100vh - 84px);">
+                    <div class="map-header-inner" style="margin-bottom:16px;">
+                        <div>
+                            <h2 style="font-size: 20px; color: #0f172a; font-weight:700;">Global Fleet Map</h2>
+                            <p style="font-size: 13px; color: #64748b; margin-top:2px;">Monitor all active vehicles and real-time alerts across regions.</p>
+                        </div>
+                        <div style="display:flex; gap: 12px;">
+                            <button class="btn-secondary interactive-item" onclick="showToast('Re-centering map...')"><i data-feather="crosshair" style="width:14px;height:14px;margin-right:6px"></i> Recenter</button>
+                            <button class="btn-primary interactive-item" onclick="showToast('Refreshing GPS pings...')"><i data-feather="refresh-cw" style="width:14px;height:14px;margin-right:6px"></i> Sync Live</button>
+                        </div>
+                    </div>
+                    <div class="card hover-card" style="flex-grow: 1; border-radius: 16px; overflow: hidden; position: relative;">
+                        <div id="full-page-map" style="width: 100%; height: 100%; min-height: 600px;"></div>
+                    </div>
+                </div>
+
+                <!-- 3. ALERTS VIEW -->
+                <div id="view-alerts" class="view-section hidden fade-in-up">
+                    <div class="full-page-card card hover-card" style="height: auto; min-height: calc(100vh - 120px); overflow: hidden; padding: 0;">
+                        <div class="page-header" style="padding: 24px 30px; margin-bottom: 0; border-bottom: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h2 style="font-size: 20px; color: #0f172a; font-weight:700;">Incident Alerts Log</h2>
+                                <p class="subtitle" style="font-size: 13px; color: #64748b; margin-top:4px;">Complete history of all dashcam AI detections.</p>
+                            </div>
+                            <div style="display:flex; gap:12px;">
+                                <div class="search-bar" style="width: 200px; background: #f8fafc; box-shadow:none; border: 1px solid #e2e8f0;">
+                                    <i data-feather="search" class="search-icon"></i>
+                                    <input type="text" placeholder="Filter log...">
+                                </div>
+                                <button class="btn-primary interactive-item" onclick="showToast('Historical log exported to CSV')"><i data-feather="download" style="width:14px;height:14px;margin-right:6px"></i> Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Driver Identity</th>
+                                        <th>Event Type</th>
+                                        <th>Detected Location</th>
+                                        <th>Timestamp</th>
+                                        <th>Status Flag</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alerts-table-body">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. ANALYTICS VIEW -->
+                <div id="view-analytics" class="view-section hidden fade-in-up">
+                    <div class="page-header" style="margin-bottom: 24px; padding:0; border: none; display:flex; justify-content:space-between; align-items:flex-end;">
+                        <div>
+                            <h2 style="font-size: 20px; color: #0f172a; font-weight:700;">Fleet Performance Analytics</h2>
+                            <p class="subtitle" style="font-size: 13px; color: #64748b; margin-top:4px;">Advanced metrics, classification breakdowns, and strict safety scoring.</p>
+                        </div>
+                        <button class="btn-secondary interactive-item" onclick="showToast('Generating PDF Report...')"><i data-feather="printer" style="width:14px;height:14px;margin-right:6px"></i> Print Report</button>
+                    </div>
+                    <div class="dashboard-grid" style="padding:0; grid-template-columns: 1fr 1fr;">
+                        <div class="card chart-card hover-card" style="padding: 24px;">
+                            <h3 class="card-title" style="margin-bottom:20px;">Incident Classification</h3>
+                            <div class="chart-container" style="height:320px; padding: 20px;">
+                                <canvas id="typeChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card chart-card hover-card" style="padding: 24px;">
+                            <h3 class="card-title" style="margin-bottom:20px;">Weekly Events Trend</h3>
+                            <div class="chart-container" style="height:320px; padding: 20px;">
+                                <canvas id="driverChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. SAFETY VIEW -->
+                <div id="view-safety" class="view-section hidden fade-in-up">
+                    <div class="page-header" style="margin-bottom: 24px; padding:0; border: none; display:flex; justify-content:space-between; align-items:flex-end;">
+                        <div>
+                            <h2 style="font-size: 20px; color: #0f172a; font-weight:700;">Safety & Coaching Center</h2>
+                            <p class="subtitle" style="font-size: 13px; color: #64748b; margin-top:4px;">Monitor driver behavior, safety streaks, and coaching needs.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-grid">
+                        <div class="left-col">
+                            <!-- Fleet Overview Glass Card -->
+                            <div class="card glass-card hover-card" style="padding: 30px; background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.95)); color: white; border:none; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
+                                    <div>
+                                        <h3 style="font-size:14px; font-weight:600; opacity:0.9; margin-bottom:4px; letter-spacing:0.5px;">FLEET SAFETY SCORE</h3>
+                                        <div style="font-size:48px; font-weight:700; line-height:1; letter-spacing:-1px;">92<span style="font-size:20px; opacity:0.7;">/100</span></div>
+                                    </div>
+                                    <div class="icon-wrapper" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); box-shadow: 0 4px 10px rgba(0,0,0,0.1);"><i data-feather="award" style="color:white;"></i></div>
+                                </div>
+                                <div style="font-size:13px; font-weight:500; opacity:0.9; display:flex; align-items:center; gap:6px;">
+                                    <i data-feather="trending-up" style="width:14px; height:14px;"></i> Top 5% of all regional fleets
+                                </div>
+                            </div>
+                            
+                            <!-- Coaching Required -->
+                            <div class="card hover-card" style="padding: 24px;">
+                                <h3 class="card-title" style="margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; display:flex; align-items:center; gap:8px;">
+                                    <div style="background:#fef2f2; padding:6px; border-radius:8px;"><i data-feather="alert-circle" style="color:#ef4444; width:16px; height:16px; display:block;"></i></div> Coaching Required
+                                </h3>
+                                <div id="coaching-list" style="display:flex; flex-direction:column; gap:16px;">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="right-col">
+                            <!-- Leaderboard -->
+                            <div class="card hover-card" style="padding: 24px; height:100%;">
+                                <h3 class="card-title" style="margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; display:flex; align-items:center; gap:8px;">
+                                    <div style="background:#fffbeb; padding:6px; border-radius:8px;"><i data-feather="star" style="color:#f59e0b; width:16px; height:16px; display:block;"></i></div> Top Performers
+                                </h3>
+                                <div id="leaderboard-list" style="display:flex; flex-direction:column; gap:12px;">
+                                    <!-- Rendered dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. SETTINGS VIEW -->
+                <div id="view-settings" class="view-section hidden fade-in-up">
+                    <div class="page-header" style="margin-bottom: 24px; padding:0; border: none;">
+                        <h2 style="font-size: 20px; color: #0f172a; font-weight:700;">Platform Configuration</h2>
+                    </div>
+                    <div class="settings-layout">
+                        <!-- Settings Sidebar -->
+                        <div class="settings-sidebar card">
+                            <ul class="settings-nav">
+                                <li class="settings-nav-item active" data-settings-target="settings-profile"><i data-feather="user"></i> Profile</li>
+                                <li class="settings-nav-item" data-settings-target="settings-notifications"><i data-feather="bell"></i> Notifications</li>
+                                <li class="settings-nav-item" data-settings-target="settings-fleet"><i data-feather="truck"></i> Fleet Defaults</li>
+                                <li class="settings-nav-item" data-settings-target="settings-privacy"><i data-feather="shield"></i> Data & Privacy</li>
+                                <li class="settings-nav-item" data-settings-target="settings-api"><i data-feather="terminal"></i> API Integrations</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Settings Content -->
+                        <div class="settings-content-area">
+                            <!-- Profile Tab -->
+                            <div id="settings-profile" class="settings-panel active-panel card hover-card">
+                                <h3 class="panel-title">Admin Profile Settings</h3>
+                                <div class="form-group">
+                                    <label>Display Name</label>
+                                    <input type="text" class="form-input" value="Command Center">
+                                </div>
+                                <div class="form-group">
+                                    <label>Email Address</label>
+                                    <input type="email" class="form-input" value="admin@aerofleet.app">
+                                </div>
+                                <div class="form-group">
+                                    <label>Role</label>
+                                    <input type="text" class="form-input" value="Fleet Manager" disabled style="background:#e2e8f0; cursor:not-allowed;">
+                                </div>
+                                <button class="btn-primary interactive-item" style="margin-top:10px;" onclick="showToast('Profile details saved successfully!')">Save Profile</button>
+                            </div>
+
+                            <!-- Notifications Tab -->
+                            <div id="settings-notifications" class="settings-panel card hover-card hidden">
+                                <h3 class="panel-title">Notification Preferences</h3>
+                                <div class="settings-row">
+                                    <div class="settings-info">
+                                        <strong>Email Alerts</strong>
+                                        <span>Receive immediate emails for critical collisions.</span>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked onchange="showToast('Email preferences updated')">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="settings-row">
+                                    <div class="settings-info">
+                                        <strong>SMS Alerts</strong>
+                                        <span>Get text messages for severe warnings.</span>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" onchange="showToast('SMS preferences updated')">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="settings-row">
+                                    <div class="settings-info">
+                                        <strong>Weekly Digest</strong>
+                                        <span>Receive a weekly summary report of fleet performance.</span>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked onchange="showToast('Digest preferences updated')">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Fleet Defaults Tab -->
+                            <div id="settings-fleet" class="settings-panel card hover-card hidden">
+                                <h3 class="panel-title">Fleet System Rules</h3>
+                                <div class="settings-row">
+                                    <div class="settings-info">
+                                        <strong>Strict AI Detection</strong>
+                                        <span>Increases dashcam sensitivity for harsh cornering and rolling stops.</span>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" checked onchange="showToast('AI Detection sensitivity updated')">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="form-group" style="margin-top: 16px;">
+                                    <label>Default Speed Limit Buffer (mph)</label>
+                                    <input type="number" class="form-input" value="5">
+                                </div>
+                                <div class="form-group">
+                                    <label>Primary Operating Region</label>
+                                    <select class="form-input">
+                                        <option>North America</option>
+                                        <option>Europe</option>
+                                        <option>Asia Pacific</option>
+                                    </select>
+                                </div>
+                                <button class="btn-primary interactive-item" style="margin-top:10px;" onclick="showToast('Fleet rules saved!')">Save Rules</button>
+                            </div>
+
+                            <!-- Data & Privacy Tab -->
+                            <div id="settings-privacy" class="settings-panel card hover-card hidden">
+                                <h3 class="panel-title">Data & Privacy</h3>
+                                <div class="settings-row">
+                                    <div class="settings-info">
+                                        <strong>Video Retention Policy</strong>
+                                        <span>Automatically delete dashcam footage after specified days.</span>
+                                    </div>
+                                    <select class="form-input" style="width: 150px; margin-left: 20px;">
+                                        <option>30 Days</option>
+                                        <option selected>90 Days</option>
+                                        <option>1 Year</option>
+                                    </select>
+                                </div>
+                                <div class="settings-row" style="margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+                                    <div class="settings-info">
+                                        <strong>Export All Fleet Data</strong>
+                                        <span>Download a complete JSON archive of all incident history.</span>
+                                    </div>
+                                    <button class="btn-secondary" onclick="showToast('Data export started. You will receive an email shortly.')">Export Data</button>
+                                </div>
+                            </div>
+
+                            <!-- API Integrations Tab -->
+                            <div id="settings-api" class="settings-panel card hover-card hidden">
+                                <h3 class="panel-title">API & Webhooks</h3>
+                                <div class="form-group">
+                                    <label>Mapbox Access Token</label>
+                                    <input type="password" class="form-input" value="pk.eyJ1IjoiYWVyb2ZsZWV0Ii...w">
+                                    <span class="input-hint">Used for rendering Live Maps and Geocoding locations globally.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label>AWS S3 Bucket (Dashcam Video Storage)</label>
+                                    <input type="text" class="form-input" value="s3://aerofleet-video-archives-2026">
+                                </div>
+                                <div class="form-group">
+                                    <label>Event Webhook URL</label>
+                                    <input type="url" class="form-input" placeholder="https://your-server.com/webhook">
+                                </div>
+                                <button class="btn-secondary interactive-item" style="width: 100%; justify-content:center; margin-top:10px;" onclick="showToast('Validating API keys... Success!')">Test Connections</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Toast Notification Container -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
